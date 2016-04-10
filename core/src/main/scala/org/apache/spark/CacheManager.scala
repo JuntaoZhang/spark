@@ -41,8 +41,10 @@ private[spark] class CacheManager(blockManager: BlockManager) extends Logging {
 
     val key = RDDBlockId(rdd.id, partition.index)
     logDebug(s"Looking for partition $key")
+    println(s"RDD=>$rdd getOrCompute Looking for partition $key")
     blockManager.get(key) match {
       case Some(blockResult) =>
+        println(s"RDD=>$rdd getOrCompute blockResult:$blockResult")
         // Partition is already materialized, so just return its values
         val existingMetrics = context.taskMetrics
           .getInputMetricsForReadMethod(blockResult.readMethod)
@@ -65,6 +67,7 @@ private[spark] class CacheManager(blockManager: BlockManager) extends Logging {
 
         // Otherwise, we have to load the partition ourselves
         try {
+          println(s"RDD=>$rdd getOrCompute Partition $key not found, computing it")
           logInfo(s"Partition $key not found, computing it")
           val computedValues = rdd.computeOrReadCheckpoint(partition, context)
 

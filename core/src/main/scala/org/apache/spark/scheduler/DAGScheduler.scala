@@ -750,10 +750,10 @@ class DAGScheduler(
   private def submitWaitingStages() {
     // TODO: We might want to run this less often, when we are sure that something has become
     // runnable that wasn't before.
-    logTrace("Checking for newly runnable parent stages")
-    logTrace("running: " + runningStages)
-    logTrace("waiting: " + waitingStages)
-    logTrace("failed: " + failedStages)
+    logInfo("Checking for newly runnable parent stages")
+    logInfo("running: " + runningStages)
+    logInfo("waiting: " + waitingStages)
+    logInfo("failed: " + failedStages)
     val waitingStagesCopy = waitingStages.toArray
     waitingStages.clear()
     for (stage <- waitingStagesCopy.sortBy(_.firstJobId)) {
@@ -789,6 +789,7 @@ class DAGScheduler(
     // In that case, we wouldn't have the stage anymore in stageIdToStage.
     val stageAttemptId = stageIdToStage.get(task.stageId).map(_.latestInfo.attemptId).getOrElse(-1)
     listenerBus.post(SparkListenerTaskStart(task.stageId, stageAttemptId, taskInfo))
+    logDebug(s"handleBeginEvent submitWaitingStages")
     submitWaitingStages()
   }
 
@@ -820,6 +821,7 @@ class DAGScheduler(
 
   private[scheduler] def handleGetTaskResult(taskInfo: TaskInfo) {
     listenerBus.post(SparkListenerTaskGettingResult(taskInfo))
+    logDebug(s"handleGetTaskResult submitWaitingStages")
     submitWaitingStages()
   }
 
@@ -859,7 +861,7 @@ class DAGScheduler(
     listenerBus.post(
       SparkListenerJobStart(job.jobId, jobSubmissionTime, stageInfos, properties))
     submitStage(finalStage)
-
+    logDebug(s"handleJobSubmitted submitWaitingStages")
     submitWaitingStages()
   }
 
@@ -904,7 +906,7 @@ class DAGScheduler(
     if (finalStage.isAvailable) {
       markMapStageJobAsFinished(job, mapOutputTracker.getStatistics(dependency))
     }
-
+    logDebug(s"handleMapStageSubmitted submitWaitingStages")
     submitWaitingStages()
   }
 
@@ -1296,6 +1298,7 @@ class DAGScheduler(
         // Unrecognized failure - also do nothing. If the task fails repeatedly, the TaskScheduler
         // will abort the job.
     }
+    logDebug(s"handleTaskCompletion submitWaitingStages")
     submitWaitingStages()
   }
 
@@ -1338,6 +1341,7 @@ class DAGScheduler(
       logDebug("Additional executor lost message for " + execId +
                "(epoch " + currentEpoch + ")")
     }
+    logDebug(s"handleExecutorLost submitWaitingStages")
     submitWaitingStages()
   }
 
@@ -1347,6 +1351,7 @@ class DAGScheduler(
       logInfo("Host added was in lost list earlier: " + host)
       failedEpoch -= execId
     }
+    logDebug(s"handleExecutorAdded submitWaitingStages")
     submitWaitingStages()
   }
 

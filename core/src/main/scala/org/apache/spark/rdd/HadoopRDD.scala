@@ -76,6 +76,8 @@ private[spark] class HadoopPartition(rddId: Int, idx: Int, s: InputSplit)
     }
     envVars
   }
+
+  override def toString: String = s"HadoopPartition($rddId, $index, $inputSplit)"
 }
 
 /**
@@ -205,6 +207,7 @@ class HadoopRDD[K, V](
   }
 
   override def compute(theSplit: Partition, context: TaskContext): InterruptibleIterator[(K, V)] = {
+    println(s"HadoopRDD compute")
     val iter = new NextIterator[(K, V)] {
 
       val split = theSplit.asInstanceOf[HadoopPartition]

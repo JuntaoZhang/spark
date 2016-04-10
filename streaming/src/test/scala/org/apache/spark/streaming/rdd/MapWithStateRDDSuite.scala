@@ -209,7 +209,7 @@ class MapWithStateRDDSuite extends SparkFunSuite with RDDCheckpointTester with B
 
       // Persist the test MapWithStateRDD so that its not recomputed while doing the next operation.
       // This is to make sure that we only touch which state keys are being touched in the next op.
-      testStateRDD.persist().count()
+      printf(s"testStateRDD count ${testStateRDD.persist().count()}%n")
 
       // To track which keys are being touched
       MapWithStateRDDSuite.touchedStateKeys.clear()

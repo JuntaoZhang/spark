@@ -51,6 +51,7 @@ private[spark] class HashShuffleManager(conf: SparkConf) extends ShuffleManager 
       startPartition: Int,
       endPartition: Int,
       context: TaskContext): ShuffleReader[K, C] = {
+    println(s"HashShuffleManager getReader($handle, $startPartition, $endPartition, $context)")
     new BlockStoreShuffleReader(
       handle.asInstanceOf[BaseShuffleHandle[K, _, C]], startPartition, endPartition, context)
   }

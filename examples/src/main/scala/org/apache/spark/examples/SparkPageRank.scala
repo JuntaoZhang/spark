@@ -43,7 +43,7 @@ object SparkPageRank {
       """.stripMargin)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) {new java.io.File(".").list()
     if (args.length < 1) {
       System.err.println("Usage: SparkPageRank <file> <iter>")
       System.exit(1)

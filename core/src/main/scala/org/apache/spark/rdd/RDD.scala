@@ -264,6 +264,7 @@ abstract class RDD[T: ClassTag](
    * subclasses of RDD.
    */
   final def iterator(split: Partition, context: TaskContext): Iterator[T] = {
+    println(s"RDD=>${this} iterator")
     if (storageLevel != StorageLevel.NONE) {
       SparkEnv.get.cacheManager.getOrCompute(this, split, context, storageLevel)
     } else {
@@ -300,9 +301,12 @@ abstract class RDD[T: ClassTag](
    */
   private[spark] def computeOrReadCheckpoint(split: Partition, context: TaskContext): Iterator[T] =
   {
+    println(s"RDD=>${this} computeOrReadCheckpoint:$isCheckpointedAndMaterialized")
     if (isCheckpointedAndMaterialized) {
+      println(s"RDD=>${this} firstParent=>$firstParent")
       firstParent[T].iterator(split, context)
     } else {
+      println(s"RDD=>${this} compute=>$split")
       compute(split, context)
     }
   }

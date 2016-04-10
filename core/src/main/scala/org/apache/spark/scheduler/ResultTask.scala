@@ -55,6 +55,7 @@ private[spark] class ResultTask[T, U](
   }
 
   override def runTask(context: TaskContext): U = {
+    println(s"ResultTask($stageId, $stageAttemptId, $partition, $locs)")
     // Deserialize the RDD and the func using the broadcast variables.
     val deserializeStartTime = System.currentTimeMillis()
     val ser = SparkEnv.get.closureSerializer.newInstance()
