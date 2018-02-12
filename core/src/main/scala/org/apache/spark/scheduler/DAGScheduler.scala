@@ -48,6 +48,9 @@ import org.apache.spark.storage.BlockManagerMessages.BlockManagerHeartbeat
  * TaskScheduler implementation that runs them on the cluster. A TaskSet contains fully independent
  * tasks that can run right away based on the data that's already on the cluster (e.g. map output
  * files from previous stages), though it may fail if this data becomes unavailable.
+ * DAGScheduler是高层级的调度层，它实现了基于Stage的调度。它会为每个job的各个stages计算出一个有向无环图，
+ * 记录RDDs和stage输出的持续化,并且找出运行该job的最优调度。然后将stages作为TaskSets提交给低层级的TaskScheduler，
+ * TaskScheduler会在集群上运行这些TaskSets。
  *
  * Spark stages are created by breaking the RDD graph at shuffle boundaries. RDD operations with
  * "narrow" dependencies, like map() and filter(), are pipelined together into one set of tasks
@@ -56,6 +59,9 @@ import org.apache.spark.storage.BlockManagerMessages.BlockManagerHeartbeat
  * stage will have only shuffle dependencies on other stages, and may compute multiple operations
  * inside it. The actual pipelining of these operations happens in the RDD.compute() functions of
  * various RDDs (MappedRDD, FilteredRDD, etc).
+ * 这些stages是通过shuffle来划分边界的,NarrowDependencies如`map()`,在每个stage中以管道连接起来形成任务集,
+ * 如果遇到ShuffleDependencies(宽依赖),需要划分多个stages.最后不同stage之间只存在shuffle,再进行多种内部算子
+ * 操作.这些实际管道发生在RDD.compute函数中.
  *
  * In addition to coming up with a DAG of stages, the DAGScheduler also determines the preferred
  * locations to run each task on, based on the current cache status, and passes these to the
@@ -63,7 +69,9 @@ import org.apache.spark.storage.BlockManagerMessages.BlockManagerHeartbeat
  * lost, in which case old stages may need to be resubmitted. Failures *within* a stage that are
  * not caused by shuffle file loss are handled by the TaskScheduler, which will retry each task
  * a small number of times before cancelling the whole stage.
- *
+ * 除了形成有向无环DAG stage图之外,DAGScheduler也会根据当前cache状态尽可能本地化执行task,然后传递给TaskScheduler.
+ * DAGScheduler还会处理因为shuffle到导致的输出文件丢失错误,这种情况丢失数据的stage需要重新提交,如果不是该错误,
+ * 由TaskScheduler处理,TaskScheduler将会在取消整个stage之前重试几次.
  * When looking through this code, there are several key concepts:
  *
  *  - Jobs (represented by [[ActiveJob]]) are the top-level work items submitted to the scheduler.

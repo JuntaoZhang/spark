@@ -17,26 +17,28 @@
 
 package org.apache.spark.rdd
 
-import org.apache.commons.math3.distribution.{PoissonDistribution, BinomialDistribution}
+import org.apache.commons.math3.distribution.{BinomialDistribution, PoissonDistribution}
+import org.apache.hadoop.conf.{Configurable, Configuration}
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.mapred._
+import org.apache.hadoop.mapreduce.{JobContext => NewJobContext, OutputCommitter => NewOutputCommitter, OutputFormat => NewOutputFormat, RecordWriter => NewRecordWriter, TaskAttemptContext => NewTaskAttempContext}
 import org.apache.hadoop.util.Progressable
+import org.apache.spark.util.Utils
+import org.apache.spark.{Partitioner, SharedSparkContext, SparkFunSuite}
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.util.Random
-
-import org.apache.hadoop.conf.{Configurable, Configuration}
-import org.apache.hadoop.mapreduce.{JobContext => NewJobContext, OutputCommitter => NewOutputCommitter,
-OutputFormat => NewOutputFormat, RecordWriter => NewRecordWriter,
-TaskAttemptContext => NewTaskAttempContext}
-import org.apache.spark.{Partitioner, SharedSparkContext, SparkFunSuite}
-import org.apache.spark.util.Utils
 
 class PairRDDFunctionsSuite extends SparkFunSuite with SharedSparkContext {
   test("aggregateByKey") {
     val pairs = sc.parallelize(Array((1, 1), (1, 1), (3, 2), (5, 1), (5, 3)), 2)
 
-    val sets = pairs.aggregateByKey(new HashSet[Int]())(_ += _, _ ++= _).collect()
+    val sets = pairs.aggregateByKey(
+      new mutable.HashSet[Int]())((set, i) => set.+=(i),
+      (set1, set2) => set1.++=(set2)
+    ).collect()
+    //    val sets = pairs.aggregateByKey(new HashSet[Int]())(_ += _, _ ++= _).collect()
     assert(sets.size === 3)
     val valuesFor1 = sets.find(_._1 == 1).get._2
     assert(valuesFor1.toList.sorted === List(1))

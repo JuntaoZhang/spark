@@ -38,7 +38,7 @@ private[spark] class BlockStoreShuffleReader[K, C](
 
   private val dep = handle.dependency
 
-  /** Read the combined key-values for this reduce task */
+  /** read the combined key-values for this reduce task */
   override def read(): Iterator[Product2[K, C]] = {
     val blockFetcherItr = new ShuffleBlockFetcherIterator(
       context,
