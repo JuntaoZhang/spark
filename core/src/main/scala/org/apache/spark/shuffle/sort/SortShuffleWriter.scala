@@ -49,6 +49,8 @@ private[spark] class SortShuffleWriter[K, V, C](
   context.taskMetrics.shuffleWriteMetrics = Some(writeMetrics)
 
   /** Write a bunch of records to this task's output */
+  // 在Map端对数据进行分区内的合并
+  // 在Map端对合并后一个分区的数据根据Key进行排序
   override def write(records: Iterator[Product2[K, V]]): Unit = {
     sorter = if (dep.mapSideCombine) {
       require(dep.aggregator.isDefined, "Map-side combine without Aggregator specified!")
@@ -61,6 +63,8 @@ private[spark] class SortShuffleWriter[K, V, C](
       new ExternalSorter[K, V, V](
         context, aggregator = None, Some(dep.partitioner), ordering = None, dep.serializer)
     }
+
+    //先出入内存,内存不足溢出磁盘,根据需不需要map combine分情况对待
     sorter.insertAll(records)
 
     // Don't bother including the time to open the merged output file in the shuffle write time,
@@ -69,6 +73,7 @@ private[spark] class SortShuffleWriter[K, V, C](
     val output = shuffleBlockResolver.getDataFile(dep.shuffleId, mapId)
     val tmp = Utils.tempFileWith(output)
     val blockId = ShuffleBlockId(dep.shuffleId, mapId, IndexShuffleBlockResolver.NOOP_REDUCE_ID)
+    //
     val partitionLengths = sorter.writePartitionedFile(blockId, tmp)
     shuffleBlockResolver.writeIndexFileAndCommit(dep.shuffleId, mapId, partitionLengths, tmp)
     mapStatus = MapStatus(blockManager.shuffleServerId, partitionLengths)

@@ -90,6 +90,7 @@ private[spark] trait Spillable[C] extends Logging {
     if (shouldSpill) {
       _spillCount += 1
       logSpillage(currentMemory)
+      // 真实溢出文件方法
       spill(collection)
       _elementsRead = 0
       _memoryBytesSpilled += currentMemory

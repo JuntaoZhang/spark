@@ -34,11 +34,19 @@ object WordCount {
     val res = sc
       .textFile(args(0))
       .flatMap(line => line.split(" "))
-      .map(w => (w, 1))
+    res.cache()
+//    res.checkpoint()
+    res.map(w => (w, 1))
       .reduceByKey(_ + _)
       .collect()
-
     res.foreach(tuple => println(tuple._1 + " => " + tuple._2))
+
+    val data = sc.parallelize(Seq((0, 5), (3, 8), (2, 6), (0, 8), (3, 8), (1, 3)), 2)
+    val dataCache = data.flatMap(p => Seq(p._1, p._2)).cache()
+    dataCache.unpersist()
+    dataCache.collect()
+
+
 
     sc.stop()
   }

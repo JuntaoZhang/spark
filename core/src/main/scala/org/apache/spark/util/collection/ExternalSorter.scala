@@ -20,16 +20,15 @@ package org.apache.spark.util.collection
 import java.io._
 import java.util.Comparator
 
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable
-
 import com.google.common.io.ByteStreams
-
 import org.apache.spark._
+import org.apache.spark.executor.ShuffleWriteMetrics
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.serializer._
-import org.apache.spark.executor.ShuffleWriteMetrics
 import org.apache.spark.storage.{BlockId, DiskBlockObjectWriter}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Sorts and potentially merges a number of key-value pairs of type (K, V) to produce key-combiner
@@ -178,6 +177,7 @@ private[spark] class ExternalSorter[K, V, C](
     // TODO: stop combining if we find that the reduction factor isn't high
     val shouldCombine = aggregator.isDefined
 
+    // 如果需要map端合并数据
     if (shouldCombine) {
       // Combine values in-memory first using our AppendOnlyMap
       val mergeValue = aggregator.get.mergeValue
@@ -189,7 +189,9 @@ private[spark] class ExternalSorter[K, V, C](
       while (records.hasNext) {
         addElementsRead()
         kv = records.next()
+        // map=>PartitionedAppendOnlyMap
         map.changeValue((getPartition(kv._1), kv._1), update)
+        // 内存不足溢出到磁盘
         maybeSpillCollection(usingMap = true)
       }
     } else {
@@ -197,6 +199,7 @@ private[spark] class ExternalSorter[K, V, C](
       while (records.hasNext) {
         addElementsRead()
         val kv = records.next()
+        // buffer=>PartitionedPairBuffer, 先插入缓存中
         buffer.insert(getPartition(kv._1), kv._1, kv._2.asInstanceOf[C])
         maybeSpillCollection(usingMap = false)
       }
@@ -210,8 +213,10 @@ private[spark] class ExternalSorter[K, V, C](
    */
   private def maybeSpillCollection(usingMap: Boolean): Unit = {
     var estimatedSize = 0L
+    // 如果需要map端合并数据
     if (usingMap) {
       estimatedSize = map.estimateSize()
+      // 检查是否需要溢出
       if (maybeSpill(map, estimatedSize)) {
         map = new PartitionedAppendOnlyMap[K, C]
       }
@@ -325,10 +330,14 @@ private[spark] class ExternalSorter[K, V, C](
     val readers = spills.map(new SpillReader(_))
     val inMemBuffered = inMemory.buffered
     (0 until numPartitions).iterator.map { p =>
+      // 内存中多个partition, 通过p筛选
       val inMemIterator = new IteratorForPartition(p, inMemBuffered)
+      // readNextPartition myPartition=0开始 每次循环+1
+      // 由此可以确定SpilledFile中包含多个partitions, hasNext直接根据分区判断是否还有数据
       val iterators = readers.map(_.readNextPartition()) ++ Seq(inMemIterator)
       if (aggregator.isDefined) {
         // Perform partial aggregation across partitions
+        // spills文件根据分区在Map端聚合合并
         (p, mergeWithAggregation(
           iterators, aggregator.get.mergeCombiners, keyComparator, ordering.isDefined))
       } else if (ordering.isDefined) {
@@ -342,13 +351,18 @@ private[spark] class ExternalSorter[K, V, C](
   }
 
   /**
+   * 几个数据集flat合并排序
+   * (使用有序队列)这种思想可以借鉴
    * Merge-sort a sequence of (K, C) iterators using a given a comparator for the keys.
    */
   private def mergeSort(iterators: Seq[Iterator[Product2[K, C]]], comparator: Comparator[K])
       : Iterator[Product2[K, C]] =
   {
+    // 过滤没有该partition的Iter,转换成BufferedIterator
     val bufferedIters = iterators.filter(_.hasNext).map(_.buffered)
     type Iter = BufferedIterator[Product2[K, C]]
+
+    //根据头排序的队列
     val heap = new mutable.PriorityQueue[Iter]()(new Ordering[Iter] {
       // Use the reverse of comparator.compare because PriorityQueue dequeues the max
       override def compare(x: Iter, y: Iter): Int = -comparator.compare(x.head._1, y.head._1)
@@ -364,7 +378,7 @@ private[spark] class ExternalSorter[K, V, C](
         val firstBuf = heap.dequeue()
         val firstPair = firstBuf.next()
         if (firstBuf.hasNext) {
-          heap.enqueue(firstBuf)
+          heap.enqueue(firstBuf)// 入队并根据头排序
         }
         firstPair
       }
@@ -389,6 +403,7 @@ private[spark] class ExternalSorter[K, V, C](
       // multiple distinct keys might be treated as equal by the ordering. To deal with this, we
       // need to read all keys considered equal by the ordering at once and compare them.
       new Iterator[Iterator[Product2[K, C]]] {
+        //首先flat合并排序
         val sorted = mergeSort(iterators, comparator).buffered
 
         // Buffers reused across elements to decrease memory allocation
@@ -429,6 +444,7 @@ private[spark] class ExternalSorter[K, V, C](
           keys.iterator.zip(combiners.iterator)
         }
       }.flatMap(i => i)
+
     } else {
       // We have a total ordering, so the objects with the same key are sequential.
       new Iterator[Product2[K, C]] {
@@ -623,6 +639,7 @@ private[spark] class ExternalSorter[K, V, C](
         groupByPartition(collection.partitionedDestructiveSortedIterator(Some(keyComparator)))
       }
     } else {
+      // 根据分区合并文件和内存数据
       // Merge spilled and in-memory data
       merge(spills, collection.partitionedDestructiveSortedIterator(comparator))
     }
@@ -647,6 +664,7 @@ private[spark] class ExternalSorter[K, V, C](
     // Track location of each range in the output file
     val lengths = new Array[Long](numPartitions)
 
+    // 没有溢出文件
     if (spills.isEmpty) {
       // Case where we only have in-memory data
       val collection = if (aggregator.isDefined) map else buffer
@@ -664,6 +682,7 @@ private[spark] class ExternalSorter[K, V, C](
       }
     } else {
       // We must perform merge-sort; get an iterator by partition and write everything directly.
+      // partitionedIterator 合并溢出文件
       for ((id, elements) <- this.partitionedIterator) {
         if (elements.hasNext) {
           val writer = blockManager.getDiskWriter(blockId, outputFile, serInstance, fileBufferSize,

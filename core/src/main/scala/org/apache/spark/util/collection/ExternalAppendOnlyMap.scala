@@ -206,6 +206,7 @@ class ExternalAppendOnlyMap[K, V, C](
         writer.write(kv._1, kv._2)
         objectsWritten += 1
 
+        // 默认10000条flush一次
         if (objectsWritten == serializerBatchSize) {
           flush()
           curWriteMetrics = new ShuffleWriteMetrics()
@@ -234,7 +235,7 @@ class ExternalAppendOnlyMap[K, V, C](
         }
       }
     }
-
+    // shuffle map可能会产生多个溢出文件,需要保存这些文件
     spilledMaps.append(new DiskMapIterator(file, blockId, batchSizes))
   }
 

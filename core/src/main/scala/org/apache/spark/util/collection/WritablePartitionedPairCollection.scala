@@ -42,6 +42,8 @@ private[spark] trait WritablePartitionedPairCollection[K, V] {
     : Iterator[((Int, K), V)]
 
   /**
+   * 迭代AppendOnlyMap或者PairBuffer数据,根据分区ID排序合并文件,可能会重建底层集合
+   *
    * Iterate through the data and write out the elements instead of returning them. Records are
    * returned in order of their partition ID and then the given comparator.
    * This may destroy the underlying collection.

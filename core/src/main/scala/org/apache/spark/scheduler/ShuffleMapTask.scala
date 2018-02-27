@@ -68,6 +68,7 @@ private[spark] class ShuffleMapTask(
     metrics = Some(context.taskMetrics)
     var writer: ShuffleWriter[Any, Any] = null
     try {
+      // 获取shuffle manager 默认SortShuffleManager
       val manager = SparkEnv.get.shuffleManager
       writer = manager.getWriter[Any, Any](dep.shuffleHandle, partitionId, context)
       writer.write(rdd.iterator(partition, context).asInstanceOf[Iterator[_ <: Product2[Any, Any]]])

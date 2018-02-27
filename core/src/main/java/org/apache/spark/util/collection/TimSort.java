@@ -67,7 +67,7 @@ class TimSort<K, Buffer> {
    * implementation, but 32 was empirically determined to work better in
    * this implementation.  In the unlikely event that you set this constant
    * to be a number that's not a power of two, you'll need to change the
-   * minRunLength computation.
+   * minRunLength computation.5
    *
    * If you decrease this constant, you must change the stackLen
    * computation in the TimSort constructor, or you risk an
