@@ -64,7 +64,7 @@ private[spark] class SortShuffleWriter[K, V, C](
         context, aggregator = None, Some(dep.partitioner), ordering = None, dep.serializer)
     }
 
-    //先出入内存,内存不足溢出磁盘,根据需不需要map combine分情况对待
+    // 先出入内存,内存不足溢出磁盘,根据需不需要map combine分情况对待
     sorter.insertAll(records)
 
     // Don't bother including the time to open the merged output file in the shuffle write time,

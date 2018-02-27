@@ -127,6 +127,7 @@ public class OneForOneStreamManager extends StreamManager {
   }
 
   /**
+   * 注册一个流的缓冲区管理作为单独块一次调用者
    * Registers a stream of ManagedBuffers which are served as individual chunks one at a time to
    * callers. Each ManagedBuffer will be release()'d after it is transferred on the wire. If a
    * client connection is closed before the iterator is fully drained, then the remaining buffers

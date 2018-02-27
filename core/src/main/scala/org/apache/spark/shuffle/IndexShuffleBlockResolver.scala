@@ -122,6 +122,7 @@ private[spark] class IndexShuffleBlockResolver(
   }
 
   /**
+   * 写分区数据索引文件
    * Write an index file with the offsets of each block, plus a final offset at the end for the
    * end of the output file. This will be used by getBlockData to figure out where each block
    * begins and ends.

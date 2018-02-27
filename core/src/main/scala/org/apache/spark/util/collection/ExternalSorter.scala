@@ -362,7 +362,7 @@ private[spark] class ExternalSorter[K, V, C](
     val bufferedIters = iterators.filter(_.hasNext).map(_.buffered)
     type Iter = BufferedIterator[Product2[K, C]]
 
-    //根据头排序的队列
+    // 根据头排序的队列
     val heap = new mutable.PriorityQueue[Iter]()(new Ordering[Iter] {
       // Use the reverse of comparator.compare because PriorityQueue dequeues the max
       override def compare(x: Iter, y: Iter): Int = -comparator.compare(x.head._1, y.head._1)
@@ -398,12 +398,13 @@ private[spark] class ExternalSorter[K, V, C](
       totalOrder: Boolean)
       : Iterator[Product2[K, C]] =
   {
+    // 聚合会出现不要排序的情况吗???
     if (!totalOrder) {
       // We only have a partial ordering, e.g. comparing the keys by hash code, which means that
       // multiple distinct keys might be treated as equal by the ordering. To deal with this, we
       // need to read all keys considered equal by the ordering at once and compare them.
       new Iterator[Iterator[Product2[K, C]]] {
-        //首先flat合并排序
+        // 首先flat合并排序
         val sorted = mergeSort(iterators, comparator).buffered
 
         // Buffers reused across elements to decrease memory allocation
