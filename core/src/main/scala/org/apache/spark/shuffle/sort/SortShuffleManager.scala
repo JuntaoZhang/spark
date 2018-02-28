@@ -24,6 +24,10 @@ import org.apache.spark.serializer.Serializer
 import org.apache.spark.shuffle._
 
 /**
+ * 在基于排序的随机播放中，传入记录将根据其目标分区ID进行排序写入单个map输出文件.
+ * reducer获取此文件的连续区域以便阅读他们的map输出部分。 在map输出数据太大而不适合的情况下
+ * 内存，排序的输出子集可以被分散到磁盘上，并且这些磁盘上的文件被合并生成最终的输出文件。
+ *
  * In sort-based shuffle, incoming records are sorted according to their target partition ids, then
  * written to a single map output file. Reducers fetch contiguous regions of this file in order to
  * read their portion of the map output. In cases where the map output data is too large to fit in
