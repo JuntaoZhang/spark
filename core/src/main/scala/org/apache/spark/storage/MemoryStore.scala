@@ -235,6 +235,8 @@ private[spark] class MemoryStore(blockManager: BlockManager, memoryManager: Memo
   }
 
   /**
+   * 展开values时所使用的内存
+   *
    * Unroll the given block in memory safely.
    *
    * The safety of this operation refers to avoiding potential OOM exceptions caused by
@@ -295,6 +297,7 @@ private[spark] class MemoryStore(blockManager: BlockManager, memoryManager: Memo
         elementsUnrolled += 1
       }
 
+      // 迭代器数据cache到内存,这里使用数内存就是Unroll Memory直接返回
       if (keepUnrolling) {
         // We successfully unrolled the entirety of this block
         Left(vector.toArray)

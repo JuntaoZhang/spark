@@ -120,9 +120,11 @@ class TimSort<K, Buffer> {
     assert c != null;
 
     int nRemaining  = hi - lo;
+    // 小于2个数不需要排序
     if (nRemaining < 2)
       return;  // Arrays of size 0 and 1 are always sorted
 
+    //如果是小数组,二分法插入排序
     // If array is small, do a "mini-TimSort" with no merges
     if (nRemaining < MIN_MERGE) {
       int initRunLen = countRunAndMakeAscending(a, lo, hi, c);

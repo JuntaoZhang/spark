@@ -163,6 +163,7 @@ public class UnsafeShuffleWriter<K, V> extends ShuffleWriter<K, V> {
       while (records.hasNext()) {
         insertRecordIntoSorter(records.next());
       }
+      // 合并成一个文件
       closeAndWriteOutput();
       success = true;
     } finally {
@@ -206,9 +207,11 @@ public class UnsafeShuffleWriter<K, V> extends ShuffleWriter<K, V> {
     final SpillInfo[] spills = sorter.closeAndGetSpills();
     sorter = null;
     final long[] partitionLengths;
+    // "shuffle_" + shuffleId + "_" + mapId + "_0.data" 每个task一个文件
     final File output = shuffleBlockResolver.getDataFile(shuffleId, mapId);
     final File tmp = Utils.tempFileWith(output);
     try {
+      // 合并溢出文件
       partitionLengths = mergeSpills(spills, tmp);
     } finally {
       for (SpillInfo spill : spills) {
@@ -290,6 +293,7 @@ public class UnsafeShuffleWriter<K, V> extends ShuffleWriter<K, V> {
             partitionLengths = mergeSpillsWithFileStream(spills, outputFile, null);
           }
         } else {
+          // compressionCodec不支持级联压缩流的解压缩
           logger.debug("Using slow merge");
           partitionLengths = mergeSpillsWithFileStream(spills, outputFile, compressionCodec);
         }
@@ -345,6 +349,7 @@ public class UnsafeShuffleWriter<K, V> extends ShuffleWriter<K, V> {
           mergedFileOutputStream = compressionCodec.compressedOutputStream(mergedFileOutputStream);
         }
 
+        // 可以看出来并没有排序,只是通过partitionLengths直接获取文件中的分区位置,直接copy
         for (int i = 0; i < spills.length; i++) {
           final long partitionLengthInSpill = spills[i].partitionLengths[partition];
           if (partitionLengthInSpill > 0) {

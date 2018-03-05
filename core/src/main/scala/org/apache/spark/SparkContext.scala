@@ -1323,9 +1323,11 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
       logWarning("Can not directly broadcast RDDs; instead, call collect() and "
         + "broadcast the result (see SPARK-5063)")
     }
+    // 创建广播数据变量
     val bc = env.broadcastManager.newBroadcast[T](value, isLocal)
     val callSite = getCallSite
     logInfo("Created broadcast " + bc.id + " from " + callSite.shortForm)
+    // 注册清理事件
     cleaner.foreach(_.registerBroadcastForCleanup(bc))
     bc
   }

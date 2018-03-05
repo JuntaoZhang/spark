@@ -38,6 +38,7 @@ import org.apache.spark.util.TaskCompletionListener;
 import org.apache.spark.util.Utils;
 
 /**
+ *
  * External sorter based on {@link UnsafeInMemorySorter}.
  */
 public final class UnsafeExternalSorter extends MemoryConsumer {
@@ -179,9 +180,11 @@ public final class UnsafeExternalSorter extends MemoryConsumer {
 
     // We only write out contents of the inMemSorter if it is not empty.
     if (inMemSorter.numRecords() > 0) {
+      // 从blockManager获取一个临时文件,溢出到该文件中
       final UnsafeSorterSpillWriter spillWriter =
         new UnsafeSorterSpillWriter(blockManager, fileBufferSizeBytes, writeMetrics,
           inMemSorter.numRecords());
+      // 保存该split文件
       spillWriters.add(spillWriter);
       final UnsafeSorterIterator sortedRecords = inMemSorter.getSortedIterator();
       while (sortedRecords.hasNext()) {

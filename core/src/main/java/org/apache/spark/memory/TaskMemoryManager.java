@@ -122,6 +122,7 @@ public class TaskMemoryManager {
   }
 
   /**
+   * Spillable.maybeSpill/TaskMemoryManager.allocatePage(Tungsten)
    * Acquire N bytes of memory for a consumer. If there is no enough memory, it will call
    * spill() of consumers to release more memory.
    *

@@ -24,9 +24,9 @@ import org.apache.spark.serializer.Serializer
 import org.apache.spark.shuffle._
 
 /**
- * 在基于排序的随机播放中，传入记录将根据其目标分区ID进行排序写入单个map输出文件.
- * reducer获取此文件的连续区域以便阅读他们的map输出部分。 在map输出数据太大而不适合的情况下
- * 内存，排序的输出子集可以被分散到磁盘上，并且这些磁盘上的文件被合并生成最终的输出文件。
+ * 在基于排序的shuffle中，rdd iter records将根据其目标分区ID进行排序写入单个map输出文件.
+ * reducer获取此文件的连续区域以便阅读他们的map输出部分。 在map输出数据太大而不适合缓存的情况下
+ * 排序的输出子集可以被分散到磁盘上，并且这些磁盘上的文件被合并生成最终的输出文件。
  *
  * In sort-based shuffle, incoming records are sorted according to their target partition ids, then
  * written to a single map output file. Reducers fetch contiguous regions of this file in order to
@@ -182,6 +182,7 @@ private[spark] object SortShuffleManager extends Logging {
     PackedRecordPointer.MAXIMUM_PARTITION_ID + 1
 
   /**
+   * 能否支持序列化shuffle
    * Helper method for determining whether a shuffle should use an optimized serialized shuffle
    * path or whether it should fall back to the original path that operates on deserialized objects.
    */
@@ -190,14 +191,17 @@ private[spark] object SortShuffleManager extends Logging {
     val numPartitions = dependency.partitioner.numPartitions
     val serializer = Serializer.getSerializer(dependency.serializer)
     if (!serializer.supportsRelocationOfSerializedObjects) {
+      // 序列化策略支持
       log.debug(s"Can't use serialized shuffle for shuffle $shufId because the serializer, " +
         s"${serializer.getClass.getName}, does not support object relocation")
       false
     } else if (dependency.aggregator.isDefined) {
+      // 不需要聚合
       log.debug(
         s"Can't use serialized shuffle for shuffle $shufId because an aggregator is defined")
       false
     } else if (numPartitions > MAX_SHUFFLE_OUTPUT_PARTITIONS_FOR_SERIALIZED_MODE) {
+      // 分区数不能超过16 million
       log.debug(s"Can't use serialized shuffle for shuffle $shufId because it has more than " +
         s"$MAX_SHUFFLE_OUTPUT_PARTITIONS_FOR_SERIALIZED_MODE partitions")
       false

@@ -138,6 +138,7 @@ class AppendOnlyMap[K, V](initialCapacity: Int = 64)
     }
     var pos = rehash(k.hashCode) & mask
     var i = 1
+    // 散列表, 通过开放地址法解决冲突
     while (true) {
       val curKey = data(2 * pos)
       if (k.eq(curKey) || k.equals(curKey)) {

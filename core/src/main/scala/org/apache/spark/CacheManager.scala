@@ -180,6 +180,7 @@ private[spark] class CacheManager(blockManager: BlockManager) extends Logging {
         case Right(it) =>
           // There is not enough space to cache this partition in memory
           val returnValues = it.asInstanceOf[Iterator[T]]
+          // 如果内存不足又不能溢出磁盘,则不能缓存直接返回,下次使用的时候只能重新计算
           if (putLevel.useDisk) {
             logWarning(s"Persisting partition $key to disk instead.")
             val diskOnlyLevel = StorageLevel(useDisk = true, useMemory = false,

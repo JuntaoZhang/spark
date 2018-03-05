@@ -37,6 +37,7 @@ private case class CleanAccum(accId: Long) extends CleanupTask
 private case class CleanCheckpoint(rddId: Int) extends CleanupTask
 
 /**
+ * 弱引用CleanupTask
  * A WeakReference associated with a CleanupTask.
  *
  * When the referent object becomes only weakly reachable, the corresponding
@@ -65,6 +66,7 @@ private[spark] class ContextCleaner(sc: SparkContext) extends Logging {
   private val listeners = new ArrayBuffer[CleanerListener]
     with SynchronizedBuffer[CleanerListener]
 
+  // 注册清理线程
   private val cleaningThread = new Thread() { override def run() { keepCleaning() }}
 
   private val periodicGCService: ScheduledExecutorService =

@@ -31,6 +31,10 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
+ * (K,V）=>(K,C)  C是V aggregator后的类型
+ * 先通过Partitioner把key分区,在每个分区内排序.
+ * 为每个分区输出单个分区文件，适用于随机读取.
+ *
  * Sorts and potentially merges a number of key-value pairs of type (K, V) to produce key-combiner
  * pairs of type (K, C). Uses a Partitioner to first group the keys into partitions, and then
  * optionally sorts keys within each partition using a custom Comparator. Can output a single

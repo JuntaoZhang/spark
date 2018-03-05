@@ -365,6 +365,7 @@ final class ShuffleExternalSorter extends MemoryConsumer {
 
     // for tests
     assert(inMemSorter != null);
+    // 判断是否溢出磁盘
     if (inMemSorter.numRecords() > numElementsForSpillThreshold) {
       spill();
     }

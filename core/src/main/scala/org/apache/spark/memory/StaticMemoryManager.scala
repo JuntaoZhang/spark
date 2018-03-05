@@ -48,6 +48,7 @@ private[spark] class StaticMemoryManager(
       numCores)
   }
 
+  //unroll 0.6*0.9*0.2=10.4%
   // Max number of bytes worth of blocks to evict when unrolling
   private val maxUnrollMemory: Long = {
     (maxStorageMemory * conf.getDouble("spark.storage.unrollFraction", 0.2)).toLong
@@ -99,6 +100,7 @@ private[spark] class StaticMemoryManager(
 private[spark] object StaticMemoryManager {
 
   /**
+   * 剩余6%预留
    * Return the total amount of memory available for the storage region, in bytes.
    */
   private def getMaxStorageMemory(conf: SparkConf): Long = {
@@ -109,6 +111,7 @@ private[spark] object StaticMemoryManager {
   }
 
   /**
+   * 剩余4%预留
    * Return the total amount of memory available for the execution region, in bytes.
    */
   private def getMaxExecutionMemory(conf: SparkConf): Long = {

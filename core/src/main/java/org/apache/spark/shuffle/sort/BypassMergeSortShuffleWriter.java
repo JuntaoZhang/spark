@@ -49,6 +49,8 @@ import org.apache.spark.storage.*;
 import org.apache.spark.util.Utils;
 
 /**
+ * 当reducer数量少于200,启动'fallback'(备用策略),每个reducer一个文件
+ *
  * This class implements sort-based shuffle's hash-style shuffle fallback path. This write path
  * writes incoming records to separate files, one file per reduce partition, then concatenates these
  * per-partition files to form a single output file, regions of which are served to reducers.

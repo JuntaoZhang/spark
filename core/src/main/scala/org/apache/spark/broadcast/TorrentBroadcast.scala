@@ -94,12 +94,15 @@ private[spark] class TorrentBroadcast[T: ClassTag](obj: T, id: Long)
    * @return number of blocks this broadcast variable is divided into
    */
   private def writeBlocks(value: T): Int = {
+    // 写driver cache
     // Store a copy of the broadcast variable in the driver so that tasks run on the driver
     // do not create a duplicate copy of the broadcast variable's value.
     SparkEnv.get.blockManager.putSingle(broadcastId, value, StorageLevel.MEMORY_AND_DISK,
       tellMaster = false)
+    // 分块
     val blocks =
       TorrentBroadcast.blockifyObject(value, blockSize, SparkEnv.get.serializer, compressionCodec)
+    // 把块写入cache,并告知cache master
     blocks.zipWithIndex.foreach { case (block, i) =>
       SparkEnv.get.blockManager.putBytes(
         BroadcastBlockId(id, "piece" + i),
@@ -117,6 +120,7 @@ private[spark] class TorrentBroadcast[T: ClassTag](obj: T, id: Long)
     val blocks = new Array[ByteBuffer](numBlocks)
     val bm = SparkEnv.get.blockManager
 
+    //
     for (pid <- Random.shuffle(Seq.range(0, numBlocks))) {
       val pieceId = BroadcastBlockId(id, "piece" + pid)
       logDebug(s"Reading piece $pieceId of $broadcastId")
@@ -162,9 +166,11 @@ private[spark] class TorrentBroadcast[T: ClassTag](obj: T, id: Long)
     out.defaultWriteObject()
   }
 
+  // 获取block value
   private def readBroadcastBlock(): T = Utils.tryOrIOException {
     TorrentBroadcast.synchronized {
       setConf(SparkEnv.get.conf)
+      // 先从本地缓存获取
       SparkEnv.get.blockManager.getLocal(broadcastId).map(_.data.next()) match {
         case Some(x) =>
           x.asInstanceOf[T]
@@ -172,13 +178,15 @@ private[spark] class TorrentBroadcast[T: ClassTag](obj: T, id: Long)
         case None =>
           logInfo("Started reading broadcast variable " + id)
           val startTimeMs = System.currentTimeMillis()
+          // 如果不存在从集群内存中获取根据写时的分片,从不同的节点获取分片
           val blocks = readBlocks()
           logInfo("Reading broadcast variable " + id + " took" + Utils.getUsedTimeMs(startTimeMs))
-
+          // 把分割的objects数组合并广播对象
           val obj = TorrentBroadcast.unBlockifyObject[T](
             blocks, SparkEnv.get.serializer, compressionCodec)
           // Store the merged copy in BlockManager so other tasks on this executor don't
           // need to re-fetch it.
+          // 写回本地内存
           SparkEnv.get.blockManager.putSingle(
             broadcastId, obj, StorageLevel.MEMORY_AND_DISK, tellMaster = false)
           obj
@@ -191,6 +199,7 @@ private[spark] class TorrentBroadcast[T: ClassTag](obj: T, id: Long)
 
 private object TorrentBroadcast extends Logging {
 
+  // 把一个对象切块
   def blockifyObject[T: ClassTag](
       obj: T,
       blockSize: Int,
@@ -204,6 +213,7 @@ private object TorrentBroadcast extends Logging {
     bos.toArrays.map(ByteBuffer.wrap)
   }
 
+  // 把分割的objects数组合并
   def unBlockifyObject[T: ClassTag](
       blocks: Array[ByteBuffer],
       serializer: Serializer,
