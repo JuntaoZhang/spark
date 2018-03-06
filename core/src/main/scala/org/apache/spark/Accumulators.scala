@@ -335,6 +335,7 @@ private[spark] object Accumulators extends Logging {
     originals(a.id) = new WeakReference[Accumulable[_, _]](a)
   }
 
+  // ContextCleaner.doCleanupAccum
   def remove(accId: Long) {
     synchronized {
       originals.remove(accId)
