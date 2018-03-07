@@ -2,6 +2,8 @@ package org.apache.spark.mytest
 
 import org.apache.spark.{SparkConf, SparkContext}
 
+import scala.collection.mutable
+
 /**
  * @author juntao zhang
  */
@@ -51,25 +53,28 @@ object FirstTest {
   }
 }
 
-object AccumulatorTest {
-  val conf = new SparkConf().setAppName("Spark Join")
-  conf.setMaster("local[*]")
-  val sc = new SparkContext(conf)
+object AccumulatorTest{
+  def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName("Spark Join")
+    conf.setMaster("local[*]")
+    val sc = new SparkContext(conf)
 
-  val accum1 = sc.accumulator(2000, "total even")
-  val accum2 = sc.accumulator(1000, "total odd")
-  val data = sc.parallelize(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), 2).map(x => {
-    if (x % 2 == 0) accum1 += x
-    else accum2 += x
-    x
-  })
-  data.cache().distinct().count()
-  //  data.foreach(println)
-  //  data.foreach(accum += _)
-  println(accum1.value)
-  println(accum2.value)
+    val accum1 = sc.accumulator(2000, "total even")
+    val accum2 = sc.accumulator(1000, "total odd")
+    val data = sc.parallelize(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), 2).map(x => {
+      if (x % 2 == 0) accum1 += x
+      else accum2 += x
+      x
+    })
+    data.count()
+    //  data.cache().distinct().count()
+    //  data.foreach(println)
+    //  data.foreach(accum += _)
+    println(accum1.value)
+    println(accum2.value)
 
-  sc.stop()
+    sc.stop()
+  }
 }
 
 object ObjTest {
@@ -80,11 +85,16 @@ object ObjTest {
       println("read age")
       31
     }
-
+    def t(x: Int) = {
+      x * 2
+    }
     val age = read()
   }
 
   def main(args: Array[String]): Unit = {
-    println(new Person)
+    val p = new Person
+
+
+    println(p)
   }
 }
