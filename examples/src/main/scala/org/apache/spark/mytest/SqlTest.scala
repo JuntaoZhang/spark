@@ -20,8 +20,9 @@ object SqlTest {
     val people = sc.textFile("/tmp/people.txt").map(_.split(",")).map(p => Person(p(0), p(1).trim.toInt))
       .toDF()
     people.registerTempTable("people")
-    val teenagers = sqlContext.sql("SELECT name, age FROM people WHERE age >= 13 AND age <= 19")
-    teenagers.map(t => "Name: " + t(0)).collect().foreach(println)
+    val teenagers1 = people.sqlContext.sql("SELECT name, age FROM people WHERE age >= 13 AND age <= 19")
+//    teenagers.explain(true)
+    teenagers1.show()
 
     sc.stop()
   }
