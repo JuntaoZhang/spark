@@ -72,6 +72,7 @@ private[spark] trait SizeTracker {
   }
 
   /**
+   * 增加多少,估算一下当前容量? 个人觉得还是需要根据不同场景量身定做
    * Take a new sample of the current collection's size.
    */
   private def takeSample(): Unit = {

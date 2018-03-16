@@ -93,7 +93,7 @@ class Analyzer(
   )
 
   /**
-   * Substitute child plan with cte definitions
+   * Substitute child plan with cte definitions , Common Table Expression
    */
   object CTESubstitution extends Rule[LogicalPlan] {
     // TODO allow subquery to define CTE
@@ -465,7 +465,7 @@ class Analyzer(
       case q: LogicalPlan =>
         logTrace(s"Attempting to resolve ${q.simpleString}")
         q transformExpressionsUp  {
-          case u @ UnresolvedAttribute(nameParts) =>
+          case u @ UnresolvedAttribute(nameParts) => // 属性建立连接 select name,age
             // Leave unchanged if resolution fails.  Hopefully will be resolved next round.
             val result =
               withPosition(u) { q.resolveChildren(nameParts, resolver).getOrElse(u) }

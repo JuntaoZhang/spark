@@ -143,6 +143,7 @@ case class Join(
     }
   }
 
+  // TODO 含义?
   def selfJoinResolved: Boolean = left.outputSet.intersect(right.outputSet).isEmpty
 
   // Joins are only resolved if they don't introduce ambiguous expression ids.

@@ -33,14 +33,15 @@ object SqlTest {
     conf.setMaster("local[*]")
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
-    import sqlContext.implicits._
+    import sqlContext.implicits.rddToDataFrameHolder
 //    val people = sc.textFile("examples/src/main/resources/people.txt")
     val people = sc.textFile("/tmp/people.txt").map(_.split(",")).map(p => Person(p(0), p(1).trim.toInt))
       .toDF()
     people.registerTempTable("people")
     val teenagers1 = sqlContext.sql("SELECT name, age FROM people WHERE age >= 13 AND age <= 19")
 //    teenagers.explain(true)
-    teenagers1.show()
+    teenagers1.collect()
+//    teenagers1.show()
 
     sc.stop()
   }

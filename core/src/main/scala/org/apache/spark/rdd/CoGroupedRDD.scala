@@ -129,7 +129,7 @@ class CoGroupedRDD[K: ClassTag](
 
   override def compute(s: Partition, context: TaskContext): Iterator[(K, Array[Iterable[_]])] = {
     val split = s.asInstanceOf[CoGroupPartition]
-    val numRdds = dependencies.length
+    val numRdds = dependencies.length // 合并的rdd数量
 
     // A list of (rdd iterator, dependency number) pairs
     val rddIterators = new ArrayBuffer[(Iterator[Product2[K, Any]], Int)]

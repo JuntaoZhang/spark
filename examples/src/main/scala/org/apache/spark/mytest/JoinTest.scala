@@ -77,7 +77,7 @@ object AccumulatorTest{
   }
 }
 
-object ObjTest {
+object ObjTest2 {
 
   class Person {
 
@@ -91,10 +91,9 @@ object ObjTest {
     val age = read()
   }
 
+
   def main(args: Array[String]): Unit = {
     val p = new Person
-
-
     println(p)
   }
 }
