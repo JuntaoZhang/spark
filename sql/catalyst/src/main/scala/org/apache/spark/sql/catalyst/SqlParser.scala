@@ -115,18 +115,19 @@ object SqlParser extends AbstractSparkSQLParser with DataTypeParser {
   protected lazy val start: Parser[LogicalPlan] =
     start1 | insert | cte
 
-  protected lazy val start1: Parser[LogicalPlan] =
-    (select | ("(" ~> select <~ ")")) *
-    ( UNION ~ ALL        ^^^ { (q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2) }
+  protected lazy val start1: Parser[LogicalPlan] = {
+    val t = select | ("(" ~> select <~ ")")
+    chainl1(t , ( UNION ~ ALL        ^^^ { (q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2) }
     | INTERSECT          ^^^ { (q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2) }
     | EXCEPT             ^^^ { (q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2)}
     | UNION ~ DISTINCT.? ^^^ { (q1: LogicalPlan, q2: LogicalPlan) => Distinct(Union(q1, q2)) }
-    )
+    ))
+  }
 
   protected lazy val select: Parser[LogicalPlan] =
     SELECT ~> DISTINCT.? ~
       repsep(projection, ",") ~
-      (FROM   ~> relations).? ~
+      opt(FROM   ~> relations) ~
       (WHERE  ~> expression).? ~
       (GROUP  ~  BY ~> rep1sep(expression, ",")).? ~
       (HAVING ~> expression).? ~

@@ -29,6 +29,7 @@ class SparkPlanner(val sqlContext: SQLContext) extends SparkStrategies {
 
   def strategies: Seq[Strategy] =
     sqlContext.experimental.extraStrategies ++ (
+      // 根据数据源做优化
       DataSourceStrategy ::
       DDLStrategy ::
       TakeOrderedAndProject ::

@@ -41,6 +41,7 @@ import org.apache.spark.{Logging, TaskContext}
  */
 private[sql] object DataSourceStrategy extends Strategy with Logging {
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
+      // CatalystScan does not seem to be used in Spark SQL.
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: CatalystScan, _)) =>
       pruneFilterProjectRaw(
         l,
@@ -49,6 +50,7 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
         (requestedColumns, allPredicates, _) =>
           toCatalystRDD(l, requestedColumns, t.buildScan(requestedColumns, allPredicates))) :: Nil
 
+      // Matches JDBCRelation exclusively (as a PrunedFilteredScan)
     case PhysicalOperation(projects, filters, l @ LogicalRelation(t: PrunedFilteredScan, _)) =>
       pruneFilterProject(
         l,
@@ -373,10 +375,10 @@ private[sql] object DataSourceStrategy extends Strategy with Logging {
       relation: LogicalRelation,
       output: Seq[Attribute],
       rdd: RDD[Row]): RDD[InternalRow] = {
-    if (relation.relation.needConversion) {
+    if (relation.relation.needConversion) {// 找了一圈这个版本似乎没有入口
       execution.RDDConversions.rowToRowRdd(rdd, output.map(_.dataType))
     } else {
-      rdd.asInstanceOf[RDD[InternalRow]]
+      rdd.asInstanceOf[RDD[InternalRow]]//???? rdd类型擦除其实是InternalRow =>JDBCRelation
     }
   }
 
